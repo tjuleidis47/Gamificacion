@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 Reto Gamificación</title>
+<style>
+  :root{
+    --azul-1:#eaf6ff;
+    --azul-2:#d3ecff;
+    --azul-3:#a9dbff;
+    --azul-4:#6fc3f7;
+    --azul-5:#3fa9f5;
+    --azul-6:#1e88e5;
+    --azul-dark:#0d47a1;
+    --exito:#43c58a;
+    --error:#ff6b6b;
+    --texto:#123a5e;
+    --blanco:#ffffff;
+    --sombra: 0 10px 30px rgba(30,136,229,.18);
+    --radius: 20px;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--texto);
+    background:linear-gradient(160deg,var(--azul-1),var(--azul-2) 40%,var(--azul-3) 100%);
+    min-height:100vh;
+  }
+  #app{
+    max-width:720px;
+    margin:0 auto;
+    padding:18px 16px 60px;
+    min-height:100vh;
+  }
+  .view{display:none;animation:fadeIn .4s ease;}
+  .view.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  .card{
+    background:var(--blanco);
+    border-radius:var(--radius);
+    box-shadow:var(--sombra);
+    padding:24px 20px;
+    margin-bottom:18px;
+  }
+
+  header.hero{
+    text-align:center;
+    padding:26px 10px 10px;
+  }
+  header.hero h1{
+    font-size:2.2rem;
+    margin:0;
+    background:linear-gradient(90deg,var(--azul-6),#7b5fe0);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    letter-spacing:.5px;
+  }
+  header.hero p.credit{
+    margin:6px 0 0;
+    font-size:.95rem;
+    color:var(--azul-dark);
+    font-weight:600;
+    opacity:.85;
+  }
+
+  h2.subtitulo{
+    text-align:center;
+    color:var(--azul-dark);
+    margin-top:0;
+  }
+
+  label{font-weight:600;font-size:.95rem;color:var(--azul-dark);}
+  input[type=text]{
+    width:100%;
+    padding:14px 16px;
+    border-radius:14px;
+    border:2px solid var(--azul-3);
+    font-size:1.05rem;
+    margin-top:8px;
+    outline:none;
+    transition:.2s;
+    background:var(--azul-1);
+  }
+  input[type=text]:focus{border-color:var(--azul-5);background:#fff;}
+
+  .avatares{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:10px;
+    margin-top:14px;
+  }
+  .avatar-btn{
+    font-size:2rem;
+    background:var(--azul-1);
+    border:3px solid transparent;
+    border-radius:16px;
+    padding:10px 0;
+    cursor:pointer;
+    transition:.15s;
+    text-align:center;
+  }
+  .avatar-btn:hover{transform:scale(1.08);background:var(--azul-2);}
+  .avatar-btn.selected{
+    border-color:var(--azul-6);
+    background:#fff;
+    box-shadow:0 6px 16px rgba(30,136,229,.35);
+    transform:scale(1.12);
+  }
+
+  .btn{
+    display:inline-block;
+    width:100%;
+    text-align:center;
+    padding:16px 18px;
+    border:none;
+    border-radius:16px;
+    font-size:1.08rem;
+    font-weight:700;
+    cursor:pointer;
+    color:#fff;
+    background:linear-gradient(90deg,var(--azul-6),var(--azul-5));
+    box-shadow:0 8px 18px rgba(30,136,229,.35);
+    transition:transform .12s ease, box-shadow .12s ease;
+    margin-top:14px;
+  }
+  .btn:active{transform:translateY(2px) scale(.99);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
+  .btn.secundario{
+    background:#fff;
+    color:var(--azul-6);
+    border:2px solid var(--azul-4);
+    box-shadow:none;
+  }
+  .btn.ghost{
+    background:transparent;
+    color:var(--azul-dark);
+    border:2px dashed var(--azul-4);
+    box-shadow:none;
+  }
+  .btn.small{padding:10px 12px;font-size:.9rem;margin-top:8px;}
+
+  .fila-btns{display:flex;gap:10px;}
+  .fila-btns .btn{margin-top:14px;}
+
+  /* LOBBY */
+  .jugador-chip{
+    display:flex;align-items:center;gap:10px;
+    background:var(--azul-1);
+    border-radius:14px;
+    padding:10px 14px;
+    margin-bottom:8px;
+    font-weight:600;
+  }
+  .jugador-chip span.av{font-size:1.5rem;}
+  .puntitos{display:inline-block;}
+  .puntitos span{
+    display:inline-block;width:8px;height:8px;border-radius:50%;
+    background:var(--azul-5);margin:0 2px;
+    animation:pulso 1.2s infinite ease-in-out;
+  }
+  .puntitos span:nth-child(2){animation-delay:.2s;}
+  .puntitos span:nth-child(3){animation-delay:.4s;}
+  @keyframes pulso{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+
+  /* JUEGO */
+  .barra-superior{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:14px;flex-wrap:wrap;gap:8px;
+  }
+  .jugador-actual{
+    display:flex;align-items:center;gap:8px;
+    background:var(--azul-1);
+    padding:6px 12px;border-radius:20px;
+    font-weight:700;font-size:.9rem;
+  }
+  .jugador-actual .av{font-size:1.4rem;}
+  .xp-actual{
+    background:linear-gradient(90deg,#ffd54f,#ffb300);
+    color:#5a3d00;font-weight:800;
+    padding:6px 14px;border-radius:20px;font-size:.9rem;
+  }
+  .nivel-tag{
+    display:inline-block;
+    background:var(--azul-6);
+    color:#fff;font-weight:700;font-size:.8rem;
+    padding:5px 12px;border-radius:20px;
+    margin-bottom:10px;
+  }
+  .progreso-track{
+    width:100%;height:10px;background:var(--azul-2);
+    border-radius:10px;overflow:hidden;margin-bottom:16px;
+  }
+  .progreso-fill{
+    height:100%;background:linear-gradient(90deg,var(--azul-5),#7b5fe0);
+    border-radius:10px;transition:width .3s ease;
+  }
+  .timer-wrap{
+    display:flex;justify-content:center;margin-bottom:10px;
+  }
+  .timer{
+    width:74px;height:74px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.5rem;font-weight:800;
+    background:conic-gradient(var(--azul-5) var(--pct,100%), var(--azul-2) 0);
+    color:var(--azul-dark);
+    transition:background .2s linear;
+    position:relative;
+  }
+  .timer::before{
+    content:'';position:absolute;width:58px;height:58px;background:#fff;border-radius:50%;
+  }
+  .timer span{position:relative;}
+  .timer.urgente{color:var(--error);}
+
+  .pregunta-num{font-weight:700;color:var(--azul-dark);font-size:.9rem;margin-bottom:4px;}
+  .pregunta-texto{font-size:1.25rem;font-weight:700;margin:6px 0 18px;line-height:1.4;}
+
+  .opcion{
+    display:block;width:100%;text-align:left;
+    background:var(--azul-1);border:2px solid transparent;
+    border-radius:16px;padding:16px 18px;margin-bottom:12px;
+    font-size:1rem;font-weight:600;cursor:pointer;
+    transition:.15s;
+  }
+  .opcion:hover{background:var(--azul-2);}
+  .opcion.correcta{
+    background:#e3fbf0;border-color:var(--exito);color:#1b7a4d;
+    animation:pop .3s ease;
+  }
+  .opcion.incorrecta{
+    background:#ffecec;border-color:var(--error);color:#a13333;
+  }
+  .opcion.deshabilitada{cursor:default;opacity:.8;}
+  @keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.03);}100%{transform:scale(1);}}
+
+  .feedback-box{
+    text-align:center;padding:18px 10px 4px;
+    animation:fadeIn .3s ease;
+  }
+  .feedback-box .resultado{
+    font-size:1.4rem;font-weight:800;margin-bottom:6px;
+  }
+  .feedback-box .explicacion{
+    font-size:.98rem;color:var(--texto);
+    background:var(--azul-1);border-radius:14px;padding:12px 14px;margin:10px 0;
+  }
+  .feedback-box .cita{
+    font-style:italic;font-size:.88rem;color:var(--azul-dark);
+    margin-top:12px;opacity:.85;
+  }
+  .feedback-box .xp-ganado{
+    font-weight:800;color:#b8860b;font-size:1.05rem;margin-top:4px;
+  }
+
+  /* FINAL */
+  .final-avatar{font-size:4rem;text-align:center;margin-bottom:6px;}
+  .final-nombre{text-align:center;font-size:1.4rem;font-weight:800;margin-bottom:2px;}
+  .final-frase{text-align:center;font-size:1.1rem;font-weight:700;color:var(--azul-dark);margin:10px 0 20px;}
+  .stats-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  }
+  .stat-item{
+    background:var(--azul-1);border-radius:14px;padding:14px;text-align:center;
+  }
+  .stat-item .valor{font-size:1.5rem;font-weight:800;color:var(--azul-6);}
+  .stat-item .etiqueta{font-size:.8rem;color:var(--texto);font-weight:600;}
+
+  /* RANKING */
+  .rank-item{
+    display:flex;align-items:center;gap:12px;
+    background:var(--azul-1);border-radius:16px;padding:12px 14px;margin-bottom:10px;
+  }
+  .rank-item.top1{background:linear-gradient(90deg,#fff6da,#ffe08a);}
+  .rank-item.top2{background:linear-gradient(90deg,#f1f4f9,#dde3ee);}
+  .rank-item.top3{background:linear-gradient(90deg,#ffe9d6,#ffd3ac);}
+  .rank-pos{font-weight:800;font-size:1.1rem;width:34px;text-align:center;}
+  .rank-av{font-size:1.8rem;}
+  .rank-nombre{flex:1;font-weight:700;}
+  .rank-xp{font-weight:800;color:var(--azul-dark);}
+
+  .toast{
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    background:var(--azul-dark);color:#fff;padding:10px 18px;border-radius:20px;
+    font-weight:700;font-size:.9rem;z-index:999;box-shadow:0 6px 18px rgba(0,0,0,.25);
+    animation:fadeIn .3s ease;
+  }
+
+  #confetti-canvas{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    pointer-events:none;z-index:998;
+  }
+
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(13,71,161,.35);
+    display:flex;align-items:center;justify-content:center;z-index:900;
+    padding:20px;
+  }
+  .modal-box{
+    background:#fff;border-radius:20px;padding:22px;max-width:420px;width:100%;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+  }
+  .modal-box h3{margin-top:0;color:var(--azul-dark);}
+
+  .nota-chica{font-size:.8rem;color:#5b7fa6;text-align:center;margin-top:10px;}
+
+  @media (max-width:420px){
+    header.hero h1{font-size:1.7rem;}
+    .avatares{grid-template-columns:repeat(4,1fr);}
+    .avatar-btn{font-size:1.6rem;}
+  }
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div id="toast-container"></div>
+
+<div id="app">
+
+  <header class="hero">
+    <h1>🎮 RETO GAMIFICACIÓN</h1>
+    <p class="credit">Creado por: Karen, Juleidis y Sofía</p>
+  </header>
+
+  <!-- REGISTRO -->
+  <div class="view active" id="view-registro">
+    <div class="card">
+      <h2 class="subtitulo">📝 Regístrate para el reto</h2>
+      <label for="input-nombre">Tu nombre</label>
+      <input type="text" id="input-nombre" maxlength="20" placeholder="Escribe tu nombre...">
+
+      <label style="display:block;margin-top:16px;">Elige tu avatar</label>
+      <div class="avatares" id="lista-avatares"></div>
+
+      <button class="btn" id="btn-confirmar-registro" disabled>🚀 Confirmar y unirme al reto</button>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="view" id="view-lobby">
+    <div class="card" style="text-align:center;">
+      <div class="puntitos"><span></span><span></span><span></span></div>
+      <h2 class="subtitulo">Sala de espera</h2>
+      <p id="lobby-jugador-info" style="font-weight:700;"></p>
+      <p style="color:#5b7fa6;">Esperando a que el profesor(a) inicie el reto para todos...</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--azul-dark);">👥 Participantes en la sala</h3>
+      <div id="lobby-lista"></div>
+    </div>
+    <div class="fila-btns">
+      <button class="btn secundario" id="btn-panel-profesor" style="margin-top:0;">👩‍🏫 Panel del profesor(a)</button>
+    </div>
+    <button class="btn ghost" id="btn-iniciar-individual">▶️ Empezar mi reto ahora (individual)</button>
+    <p class="nota-chica">La sincronización automática funciona entre pestañas del mismo navegador/dispositivo. Si juegas desde otro celular o computador, usa el botón individual para no esperar.</p>
+  </div>
+
+  <!-- JUEGO -->
+  <div class="view" id="view-juego">
+    <div class="barra-superior">
+      <div class="jugador-actual"><span class="av" id="jg-avatar"></span><span id="jg-nombre"></span></div>
+      <div class="xp-actual">⭐ <span id="jg-xp">0</span> XP</div>
+    </div>
+    <span class="nivel-tag" id="jg-nivel"></span>
+    <div class="progreso-track"><div class="progreso-fill" id="jg-progreso"></div></div>
+
+    <div class="card">
+      <div class="timer-wrap"><div class="timer" id="jg-timer" style="--pct:100%"><span>⏱️ <span id="jg-segundos">25</span></span></div></div>
+      <div class="pregunta-num" id="jg-numero"></div>
+      <div class="pregunta-texto" id="jg-pregunta"></div>
+      <div id="jg-opciones"></div>
+      <div id="jg-feedback"></div>
+    </div>
+  </div>
+
+  <!-- FINAL -->
+  <div class="view" id="view-final">
+    <div class="card">
+      <h2 class="subtitulo">🎉 ¡Reto completado!</h2>
+      <div class="final-avatar" id="fin-avatar"></div>
+      <div class="final-nombre" id="fin-nombre"></div>
+      <div class="final-frase" id="fin-frase"></div>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="valor" id="fin-xp">0</div><div class="etiqueta">XP obtenidos</div></div>
+        <div class="stat-item"><div class="valor" id="fin-nivel">-</div><div class="etiqueta">Nivel alcanzado</div></div>
+        <div class="stat-item"><div class="valor" id="fin-correctas">0</div><div class="etiqueta">✅ Correctas</div></div>
+        <div class="stat-item"><div class="valor" id="fin-incorrectas">0</div><div class="etiqueta">❌ Incorrectas</div></div>
+        <div class="stat-item"><div class="valor" id="fin-porcentaje">0%</div><div class="etiqueta">Aciertos</div></div>
+        <div class="stat-item"><div class="valor" id="fin-posicion">-</div><div class="etiqueta">Posición en ranking</div></div>
+      </div>
+      <button class="btn" id="btn-ver-ranking">🏆 VER RANKING</button>
+      <button class="btn secundario" id="btn-jugar-de-nuevo">🔄 JUGAR DE NUEVO</button>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="view" id="view-ranking">
+    <div class="card">
+      <h2 class="subtitulo">🏆 Ranking de la partida</h2>
+      <div id="ranking-lista"></div>
+      <button class="btn secundario" id="btn-ranking-volver">⬅️ Volver</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL PROFESOR -->
+<div class="modal-bg" id="modal-profesor" style="display:none;">
+  <div class="modal-box">
+    <h3>👩‍🏫 Panel del profesor(a)</h3>
+    <p><strong id="modal-conteo">0</strong> estudiante(s) en la sala.</p>
+    <div id="modal-lista" style="max-height:180px;overflow:auto;margin-bottom:10px;"></div>
+    <button class="btn" id="btn-iniciar-todos">🚀 Iniciar el reto para todos</button>
+    <button class="btn secundario" id="btn-nueva-partida">🔄 Nueva partida (reinicia ranking)</button>
+    <button class="btn ghost" id="btn-cerrar-modal">Cerrar</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============== DATOS ============== */
+const AVATARES = ["🦚","🐰","🐯","🐷","🐻","🍎","🌽","🍌","🥕","🌺","🌸","🪷","☘️"];
+
+const NIVELES = {
+  1:{nombre:"🔥 CALENTAMIENTO"},
+  2:{nombre:"🎮 GAMIFICACIÓN VS. ABJ"},
+  3:{nombre:"🧠 MOTIVACIÓN"},
+  4:{nombre:"⚙️ MECÁNICAS Y DINÁMICAS"},
+  5:{nombre:"🕵️ CASOS Y RETOS"}
+};
+
+const PREGUNTAS = [
+  {nivel:1, q:`¿Qué es la gamificación?`,
+   ops:[`Convertir una clase completa en un videojuego narrativo`,
+        `Aplicar elementos y dinámicas propias de los juegos (puntos, retos, insignias) en contextos que no son juegos, como el aula`,
+        `Usar únicamente juegos de mesa en la enseñanza`,
+        `Evaluar a los estudiantes solo con exámenes tradicionales`],
+   correcta:1,
+   explica:`La gamificación consiste en incorporar elementos de juego (puntos, niveles, insignias, retos) en actividades que originalmente no son lúdicas, para motivar la participación.`},
+
+  {nivel:1, q:`¿Cuál es el objetivo principal de gamificar una clase?`,
+   ops:[`Reemplazar por completo el contenido académico`,
+        `Aumentar la motivación y el compromiso de los estudiantes con el aprendizaje`,
+        `Hacer que todas las clases duren menos tiempo`,
+        `Eliminar la evaluación`],
+   correcta:1,
+   explica:`El fin de la gamificación es motivar y comprometer a los estudiantes con su propio proceso de aprendizaje, no sustituir el contenido.`},
+
+  {nivel:1, q:`¿Cuál de estas es una herramienta digital usada comúnmente para gamificar una clase?`,
+   ops:[`Kahoot`,`Excel avanzado`,`Paint`,`Bloc de notas`],
+   correcta:0,
+   explica:`Kahoot, junto con Quizizz, Genially y Wordwall, son plataformas ampliamente usadas para crear actividades gamificadas en el aula.`},
+
+  {nivel:2, q:`¿Cuál es la diferencia principal entre la Gamificación y el Aprendizaje Basado en Juegos (ABJ)?`,
+   ops:[`Son exactamente lo mismo`,
+        `La gamificación usa elementos de juego dentro de una actividad no lúdica; el ABJ usa un juego completo como estrategia de enseñanza`,
+        `El ABJ no sirve para educación`,
+        `La gamificación solo existe en formato digital`],
+   correcta:1,
+   explica:`En la gamificación se toman piezas del juego (puntos, insignias, retos) y se aplican a una actividad tradicional; en el ABJ, el juego completo es el vehículo de aprendizaje.`},
+
+  {nivel:2, q:`¿Qué se entiende por "ludificación" o aprendizaje lúdico?`,
+   ops:[`Es la traducción/adaptación en español del término gamificación, que resalta el componente de juego y disfrute en el aprendizaje`,
+        `Es un tipo de examen escrito`,
+        `Es una técnica exclusiva para educación infantil`,
+        `Es lo opuesto a la gamificación`],
+   correcta:0,
+   explica:`"Ludificación" es la adaptación en español del término gamificación, y enfatiza el componente lúdico (de juego) del aprendizaje.`},
+
+  {nivel:2, q:`¿Qué son los "serious games" (juegos serios)?`,
+   ops:[`Juegos de mesa sin reglas`,
+        `Videojuegos diseñados específicamente con un propósito educativo, de entrenamiento o de concientización, más allá del entretenimiento`,
+        `Juegos que no se pueden usar en clase`,
+        `Exámenes disfrazados de juego`],
+   correcta:1,
+   explica:`Los serious games son videojuegos completos creados con una intención pedagógica, de entrenamiento o de sensibilización social, no solo para divertir.`},
+
+  {nivel:3, q:`Según la Teoría de la Autodeterminación de Deci y Ryan, ¿cuáles son las tres necesidades psicológicas básicas que motivan a las personas?`,
+   ops:[`Dinero, fama y poder`,
+        `Autonomía, competencia y relación (conexión con los demás)`,
+        `Velocidad, precisión y memoria`,
+        `Puntos, insignias y niveles`],
+   correcta:1,
+   explica:`Deci y Ryan identifican tres necesidades psicológicas básicas: autonomía (sentir control sobre las decisiones), competencia (sentirse capaz) y relación (sentirse conectado con otros).`},
+
+  {nivel:3, q:`Un docente permite que los estudiantes elijan entre tres retos distintos para demostrar lo aprendido. ¿Qué necesidad psicológica está fortaleciendo principalmente?`,
+   ops:[`Autonomía`,`Competencia`,`Relación`,`Ninguna`],
+   correcta:0,
+   explica:`Dar opciones y permitir decisiones propias fortalece la autonomía, uno de los pilares de la motivación según la Teoría de la Autodeterminación.`},
+
+  {nivel:3, q:`En una actividad gamificada, los estudiantes trabajan en equipos y celebran juntos sus logros. ¿Qué necesidad psicológica se está favoreciendo?`,
+   ops:[`Autonomía`,`Competencia`,`Relación o conexión con los demás`,`Ninguna de las anteriores`],
+   correcta:2,
+   explica:`El trabajo colaborativo y la celebración conjunta fortalecen la necesidad de relación: sentirse conectado y valorado por otros.`},
+
+  {nivel:3, q:`¿Qué describe la Teoría del Flow de Csikszentmihalyi?`,
+   ops:[`Un estado de concentración plena y disfrute que surge cuando el reto de una actividad se equilibra con las habilidades de la persona`,
+        `Un método para calificar exámenes`,
+        `Una técnica de relajación sin relación con el aprendizaje`,
+        `Una teoría sobre la memoria a corto plazo`],
+   correcta:0,
+   explica:`El "Flow" o "fluir" ocurre cuando el nivel de dificultad de una tarea coincide con la habilidad del estudiante, generando concentración total y disfrute.`},
+
+  {nivel:4, q:`Según el conductismo y el refuerzo de Skinner aplicado a la gamificación, ¿por qué funcionan las recompensas (puntos, insignias) para motivar?`,
+   ops:[`Porque refuerzan positivamente una conducta, aumentando la probabilidad de que se repita`,
+        `Porque castigan al estudiante que se equivoca`,
+        `Porque eliminan la necesidad de aprender contenidos`,
+        `Porque no tienen ningún efecto psicológico`],
+   correcta:0,
+   explica:`Skinner explicó que un refuerzo positivo (una recompensa) aumenta la probabilidad de que una conducta deseada se repita; por eso los puntos e insignias motivan a corto plazo.`},
+
+  {nivel:4, q:`¿Qué es el modelo Octalysis de Yu-kai Chou?`,
+   ops:[`Un tipo de examen de opción múltiple`,
+        `Un marco que identifica ocho motivadores centrales ("core drives") del comportamiento humano usados para diseñar experiencias gamificadas`,
+        `Una plataforma para crear videos`,
+        `Un sistema de calificación numérica`],
+   correcta:1,
+   explica:`Octalysis es un marco de diseño gamificado que organiza la motivación humana en ocho "core drives" (como el sentido de propósito, el logro o la creatividad, entre otros).`},
+
+  {nivel:4, q:`En el marco MDA (Mecánicas, Dinámicas y Estéticas), ¿qué representan las "Estéticas"?`,
+   ops:[`Las reglas y sistemas del juego (puntos, turnos, niveles)`,
+        `El comportamiento que surge cuando el jugador interactúa con las mecánicas`,
+        `La respuesta emocional y la experiencia que el juego genera en el jugador (diversión, desafío, curiosidad)`,
+        `El diseño gráfico exclusivamente`],
+   correcta:2,
+   explica:`En el modelo MDA: las Mecánicas son las reglas, las Dinámicas son el comportamiento resultante de esas reglas en acción, y las Estéticas son la experiencia emocional del jugador (diversión, reto, asombro, etc.).`},
+
+  {nivel:5, q:`Un docente solo añade una tabla de puntos y medallas a su clase, sin cambiar la forma de enseñar ni generar retos significativos, y los estudiantes pierden el interés rápidamente. ¿Qué riesgo de una mala gamificación se está presentando?`,
+   ops:[`Brecha de acceso digital`,
+        `"Gamificación de plástico": una capa superficial de juego sin transformar realmente la experiencia de aprendizaje`,
+        `Evaluación superficial`,
+        `Dependencia de recompensas externas`],
+   correcta:1,
+   explica:`La "gamificación de plástico" ocurre cuando solo se agregan elementos decorativos de juego (puntos, medallas) sin un diseño pedagógico real detrás, por lo que el interés se desvanece rápido.`},
+
+  {nivel:5, q:`El ejemplo de "La Liga de los Cazadores de Palabras" presentado en la exposición buscaba principalmente...`,
+   ops:[`Sustituir por completo la clase de lengua castellana por un videojuego comercial`,
+        `Mostrar cómo una estrategia gamificada bien diseñada (retos, roles, progreso) puede fortalecer el vocabulario y la comprensión lectora de forma significativa`,
+        `Demostrar que la gamificación no funciona en el aula`,
+        `Evaluar únicamente mediante exámenes escritos tradicionales`],
+   correcta:1,
+   explica:`"La Liga de los Cazadores de Palabras" es un ejemplo de gamificación bien aplicada: usa retos y progreso para fortalecer el vocabulario y la comprensión lectora, más allá de solo poner puntos.`}
+];
+
+const CITAS = [
+  {t:`Un libro debe ser el hacha que rompa el mar helado que hay dentro de nosotros.`, a:`Franz Kafka`},
+  {t:`Un lector vive mil vidas antes de morir. Aquel que nunca lee vive solo una.`, a:`George R. R. Martin`},
+  {t:`Un libro es una cosa entre las cosas, un volumen perdido entre los volúmenes... hasta que da con su lector.`, a:`Jorge Luis Borges`}
+];
+
+const TIEMPO_PREGUNTA = 25;
+const LS_SESION = "rg_sesion_actual";
+const LS_JUGADORES = "rg_jugadores";
+
+/* ============== ESTADO ============== */
+let jugador = null;      // {id,nombre,avatar,xp,correctas,incorrectas}
+let sesionId = null;
+let preguntaIdx = 0;
+let timerInterval = null;
+let segundosRestantes = TIEMPO_PREGUNTA;
+let respondida = false;
+let audioCtx = null;
+
+/* ============== UTILIDADES DE ALMACENAMIENTO ============== */
+function getSesion(){
+  try{ return JSON.parse(localStorage.getItem(LS_SESION)) || null; }catch(e){ return null; }
+}
+function setSesion(s){ localStorage.setItem(LS_SESION, JSON.stringify(s)); }
+
+function getJugadoresRaw(){
+  try{ return JSON.parse(localStorage.getItem(LS_JUGADORES)) || []; }catch(e){ return []; }
+}
+function setJugadoresRaw(arr){ localStorage.setItem(LS_JUGADORES, JSON.stringify(arr)); }
+
+function asegurarSesion(){
+  let s = getSesion();
+  if(!s || s.terminada){
+    s = { id: "s_"+Date.now()+"_"+Math.floor(Math.random()*9999), started:false, startedAt:null, terminada:false };
+    setSesion(s);
+  }
+  sesionId = s.id;
+  return s;
+}
+
+function jugadoresDeLaSesion(){
+  return getJugadoresRaw().filter(function(p){ return p.sesionId === sesionId; });
+}
+
+function guardarJugador(j){
+  const arr = getJugadoresRaw();
+  const idx = arr.findIndex(function(p){ return p.id === j.id; });
+  if(idx>=0) arr[idx]=j; else arr.push(j);
+  setJugadoresRaw(arr);
+}
+
+/* ============== SONIDOS (Web Audio API) ============== */
+function getAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx=null; }
+  }
+  return audioCtx;
+}
+function tono(freq, duracion, tipo, volumen){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = tipo || "sine";
+  osc.frequency.value = freq;
+  gain.gain.value = volumen||0.08;
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duracion);
+  osc.stop(ctx.currentTime + duracion);
+}
+function sonidoCorrecto(){ tono(660,.12,"triangle",.1); setTimeout(function(){tono(880,.15,"triangle",.1);},110); }
+function sonidoIncorrecto(){ tono(220,.25,"sawtooth",.08); }
+function sonidoTick(){ tono(500,.05,"square",.03); }
+function sonidoFinal(){
+  [523,659,784,1047].forEach(function(f,i){ setTimeout(function(){tono(f,.25,"triangle",.09);}, i*140); });
+}
+
+/* ============== NAVEGACIÓN DE VISTAS ============== */
+function mostrarVista(id){
+  document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+  document.getElementById(id).classList.add("active");
+}
+function toast(msg){
+  const c = document.getElementById("toast-container");
+  const d = document.createElement("div");
+  d.className="toast"; d.textContent=msg;
+  c.appendChild(d);
+  setTimeout(function(){ d.remove(); }, 2600);
+}
+
+/* ============== REGISTRO ============== */
+let avatarSeleccionado = null;
+function initRegistro(){
+  const cont = document.getElementById("lista-avatares");
+  cont.innerHTML="";
+  AVATARES.forEach(function(av){
+    const b = document.createElement("div");
+    b.className="avatar-btn";
+    b.textContent = av;
+    b.addEventListener("click", function(){
+      document.querySelectorAll(".avatar-btn").forEach(function(x){x.classList.remove("selected");});
+      b.classList.add("selected");
+      avatarSeleccionado = av;
+      validarRegistro();
+    });
+    cont.appendChild(b);
+  });
+  document.getElementById("input-nombre").addEventListener("input", validarRegistro);
+  document.getElementById("btn-confirmar-registro").addEventListener("click", confirmarRegistro);
+}
+function validarRegistro(){
+  const nombre = document.getElementById("input-nombre").value.trim();
+  document.getElementById("btn-confirmar-registro").disabled = !(nombre.length>0 && avatarSeleccionado);
+}
+function confirmarRegistro(){
+  getAudioCtx();
+  const nombre = document.getElementById("input-nombre").value.trim();
+  asegurarSesion();
+  jugador = {
+    id: "p_"+Date.now()+"_"+Math.floor(Math.random()*9999),
+    nombre: nombre,
+    avatar: avatarSeleccionado,
+    xp:0, correctas:0, incorrectas:0,
+    sesionId: sesionId,
+    finalizado:false
+  };
+  guardarJugador(jugador);
+  entrarALobby();
+}
+
+/* ============== LOBBY ============== */
+let lobbyPolling = null;
+function entrarALobby(){
+  document.getElementById("lobby-jugador-info").textContent = jugador.avatar + " " + jugador.nombre + ", ¡ya estás en la sala!";
+  renderLobby();
+  mostrarVista("view-lobby");
+  if(lobbyPolling) clearInterval(lobbyPolling);
+  lobbyPolling = setInterval(chequearInicioSesion, 800);
+  window.addEventListener("storage", onStorageChange);
+}
+function renderLobby(){
+  const lista = jugadoresDeLaSesion();
+  const cont = document.getElementById("lobby-lista");
+  cont.innerHTML="";
+  if(lista.length===0){
+    cont.innerHTML = "<p style='color:#5b7fa6;'>Aún no hay participantes...</p>";
+  }
+  lista.forEach(function(p){
+    const d = document.createElement("div");
+    d.className="jugador-chip";
+    d.innerHTML = "<span class='av'>"+p.avatar+"</span><span>"+escapeHtml(p.nombre)+"</span>";
+    cont.appendChild(d);
+  });
+}
+function onStorageChange(e){
+  if(e.key===LS_JUGADORES) renderLobby();
+  if(e.key===LS_SESION) chequearInicioSesion();
+}
+function chequearInicioSesion(){
+  const s = getSesion();
+  renderLobby();
+  if(s && s.id===sesionId && s.started && jugador && !jugador.finalizado){
+    clearInterval(lobbyPolling);
+    toast("🚀 ¡El profesor(a) inició el reto!");
+    setTimeout(iniciarJuego, 600);
+  }
+}
+document.getElementById("btn-iniciar-individual").addEventListener("click", function(){
+  clearInterval(lobbyPolling);
+  iniciarJuego();
+});
+
+/* ============== PANEL PROFESOR ============== */
+document.getElementById("btn-panel-profesor").addEventListener("click", abrirPanelProfesor);
+function abrirPanelProfesor(){
+  const lista = jugadoresDeLaSesion();
+  document.getElementById("modal-conteo").textContent = lista.length;
+  const cont = document.getElementById("modal-lista");
+  cont.innerHTML="";
+  lista.forEach(function(p){
+    const d = document.createElement("div");
+    d.className="jugador-chip";
+    d.innerHTML = "<span class='av'>"+p.avatar+"</span><span>"+escapeHtml(p.nombre)+"</span>";
+    cont.appendChild(d);
+  });
+  document.getElementById("modal-profesor").style.display="flex";
+}
+document.getElementById("btn-cerrar-modal").addEventListener("click", function(){
+  document.getElementById("modal-profesor").style.display="none";
+});
+document.getElementById("btn-iniciar-todos").addEventListener("click", function(){
+  const s = getSesion() || asegurarSesion();
+  s.started = true; s.startedAt = Date.now();
+  setSesion(s);
+  document.getElementById("modal-profesor").style.display="none";
+  chequearInicioSesion();
+});
+document.getElementById("btn-nueva-partida").addEventListener("click", function(){
+  const nueva = { id:"s_"+Date.now()+"_"+Math.floor(Math.random()*9999), started:false, startedAt:null, terminada:false };
+  setSesion(nueva);
+  toast("🔄 Nueva partida creada. El ranking se reinició.");
+  document.getElementById("modal-profesor").style.display="none";
+});
+
+/* ============== JUEGO ============== */
+function iniciarJuego(){
+  preguntaIdx = 0;
+  mostrarVista("view-juego");
+  document.getElementById("jg-avatar").textContent = jugador.avatar;
+  document.getElementById("jg-nombre").textContent = jugador.nombre;
+  cargarPregunta();
+}
+function cargarPregunta(){
+  respondida = false;
+  const total = PREGUNTAS.length;
+  const p = PREGUNTAS[preguntaIdx];
+  document.getElementById("jg-nivel").textContent = "Nivel " + p.nivel + " — " + NIVELES[p.nivel].nombre;
+  document.getElementById("jg-numero").textContent = "Pregunta " + (preguntaIdx+1) + " de " + total;
+  document.getElementById("jg-pregunta").textContent = p.q;
+  document.getElementById("jg-xp").textContent = jugador.xp;
+  document.getElementById("jg-progreso").style.width = Math.round((preguntaIdx/total)*100) + "%";
+  document.getElementById("jg-feedback").innerHTML="";
+
+  const cont = document.getElementById("jg-opciones");
+  cont.innerHTML="";
+  p.ops.forEach(function(op, i){
+    const b = document.createElement("button");
+    b.className="opcion";
+    b.textContent = op;
+    b.addEventListener("click", function(){ responder(i); });
+    cont.appendChild(b);
+  });
+  document.getElementById("jg-opciones").style.display="block";
+
+  iniciarTimer();
+}
+function iniciarTimer(){
+  segundosRestantes = TIEMPO_PREGUNTA;
+  actualizarTimerUI();
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(function(){
+    segundosRestantes--;
+    if(segundosRestantes<=5 && segundosRestantes>0) sonidoTick();
+    actualizarTimerUI();
+    if(segundosRestantes<=0){
+      clearInterval(timerInterval);
+      if(!respondida) responder(-1);
+    }
+  },1000);
+}
+function actualizarTimerUI(){
+  const el = document.getElementById("jg-timer");
+  const seg = document.getElementById("jg-segundos");
+  seg.textContent = Math.max(segundosRestantes,0);
+  const pct = Math.max(segundosRestantes,0)/TIEMPO_PREGUNTA*100;
+  el.style.setProperty("--pct", pct+"%");
+  if(segundosRestantes<=5) el.classList.add("urgente"); else el.classList.remove("urgente");
+}
+function responder(indiceElegido){
+  if(respondida) return;
+  respondida = true;
+  clearInterval(timerInterval);
+  const p = PREGUNTAS[preguntaIdx];
+  const opciones = document.querySelectorAll("#jg-opciones .opcion");
+  const esCorrecta = indiceElegido === p.correcta;
+
+  opciones.forEach(function(btn, i){
+    btn.classList.add("deshabilitada");
+    if(i===p.correcta) btn.classList.add("correcta");
+    else if(i===indiceElegido) btn.classList.add("incorrecta");
+  });
+
+  let xpGanado = 0;
+  if(esCorrecta){
+    const bonus = Math.round((Math.max(segundosRestantes,0)/TIEMPO_PREGUNTA)*20);
+    xpGanado = 100 + bonus;
+    jugador.xp += xpGanado;
+    jugador.correctas++;
+    sonidoCorrecto();
+  } else {
+    jugador.incorrectas++;
+    sonidoIncorrecto();
+  }
+  guardarJugador(jugador);
+  document.getElementById("jg-xp").textContent = jugador.xp;
+
+  const cita = CITAS[Math.floor(Math.random()*CITAS.length)];
+  const fb = document.getElementById("jg-feedback");
+  fb.innerHTML =
+    "<div class='feedback-box'>"+
+      "<div class='resultado' style='color:"+(esCorrecta?"#1b7a4d":"#a13333")+"'>"+
+        (esCorrecta ? "✅ ¡Correcto!" : (indiceElegido===-1 ? "⏱️ Se acabó el tiempo" : "❌ Respuesta incorrecta"))+
+      "</div>"+
+      (esCorrecta ? "<div class='xp-ganado'>+"+xpGanado+" XP</div>" : "")+
+      "<div class='explicacion'>💡 "+p.explica+"</div>"+
+      "<div class='cita'>“"+cita.t+"” — "+cita.a+"</div>"+
+    "</div>";
+
+  setTimeout(function(){
+    preguntaIdx++;
+    if(preguntaIdx < PREGUNTAS.length){
+      cargarPregunta();
+    } else {
+      finalizarJuego();
+    }
+  }, 2800);
+}
+
+/* ============== FINAL ============== */
+function finalizarJuego(){
+  jugador.finalizado = true;
+  guardarJugador(jugador);
+  sonidoFinal();
+  lanzarConfeti();
+
+  const total = jugador.correctas + jugador.incorrectas;
+  const porcentaje = total>0 ? Math.round((jugador.correctas/total)*100) : 0;
+
+  let frase, nivelAlcanzado;
+  if(porcentaje>=90){ frase="🏆 ¡Excelente! Dominas la gamificación."; nivelAlcanzado="🏆 Experto"; }
+  else if(porcentaje>=70){ frase="🌟 ¡Muy bien! Comprendiste los conceptos principales."; nivelAlcanzado="🌟 Avanzado"; }
+  else if(porcentaje>=50){ frase="💪 ¡Buen trabajo! Sigue repasando algunos conceptos."; nivelAlcanzado="💪 Intermedio"; }
+  else { frase="📘 Vas por buen camino, repasa la exposición y vuelve a intentarlo."; nivelAlcanzado="📘 Principiante"; }
+
+  const ranking = jugadoresDeLaSesion().slice().sort(function(a,b){ return b.xp-a.xp; });
+  const posicion = ranking.findIndex(function(p){ return p.id===jugador.id; }) + 1;
+
+  document.getElementById("fin-avatar").textContent = jugador.avatar;
+  document.getElementById("fin-nombre").textContent = jugador.nombre;
+  document.getElementById("fin-frase").textContent = frase;
+  document.getElementById("fin-xp").textContent = jugador.xp;
+  document.getElementById("fin-nivel").textContent = nivelAlcanzado;
+  document.getElementById("fin-correctas").textContent = jugador.correctas;
+  document.getElementById("fin-incorrectas").textContent = jugador.incorrectas;
+  document.getElementById("fin-porcentaje").textContent = porcentaje + "%";
+  document.getElementById("fin-posicion").textContent = "#" + posicion;
+
+  mostrarVista("view-final");
+}
+document.getElementById("btn-ver-ranking").addEventListener("click", function(){
+  renderRanking();
+  mostrarVista("view-ranking");
+});
+document.getElementById("btn-ranking-volver").addEventListener("click", function(){
+  mostrarVista("view-final");
+});
+document.getElementById("btn-jugar-de-nuevo").addEventListener("click", function(){
+  document.getElementById("input-nombre").value="";
+  avatarSeleccionado=null;
+  document.querySelectorAll(".avatar-btn").forEach(function(x){x.classList.remove("selected");});
+  validarRegistro();
+  jugador = null;
+  mostrarVista("view-registro");
+});
+
+/* ============== RANKING ============== */
+function renderRanking(){
+  const s = getSesion();
+  const lista = getJugadoresRaw()
+    .filter(function(p){ return p.sesionId === (s?s.id:sesionId); })
+    .sort(function(a,b){ return b.xp-a.xp; });
+  const cont = document.getElementById("ranking-lista");
+  cont.innerHTML="";
+  if(lista.length===0){
+    cont.innerHTML="<p>Aún no hay participantes en esta partida.</p>";
+    return;
+  }
+  const medallas = ["🥇","🥈","🥉"];
+  lista.forEach(function(p, i){
+    const d = document.createElement("div");
+    d.className="rank-item"+(i===0?" top1":i===1?" top2":i===2?" top3":"");
+    const pos = i<3 ? medallas[i] : ("#"+(i+1));
+    d.innerHTML =
+      "<div class='rank-pos'>"+pos+"</div>"+
+      "<div class='rank-av'>"+p.avatar+"</div>"+
+      "<div class='rank-nombre'>"+escapeHtml(p.nombre)+"</div>"+
+      "<div class='rank-xp'>⭐ "+p.xp+" XP</div>";
+    cont.appendChild(d);
+  });
+}
+
+/* ============== CONFETI ============== */
+function lanzarConfeti(){
+  const canvas = document.getElementById("confetti-canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colores = ["#3fa9f5","#6fc3f7","#ffd54f","#7b5fe0","#43c58a","#ff6b6b"];
+  const piezas = [];
+  for(let i=0;i<140;i++){
+    piezas.push({
+      x: Math.random()*canvas.width,
+      y: -20 - Math.random()*canvas.height*0.5,
+      w: 6+Math.random()*6,
+      h: 8+Math.random()*10,
+      color: colores[Math.floor(Math.random()*colores.length)],
+      vy: 2+Math.random()*3,
+      vx: -1.5+Math.random()*3,
+      rot: Math.random()*360,
+      vr: -6+Math.random()*12
+    });
+  }
+  let frames=0;
+  const maxFrames=210;
+  function anim(){
+    frames++;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    piezas.forEach(function(p){
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.color;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    if(frames<maxFrames) requestAnimationFrame(anim);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  anim();
+}
+window.addEventListener("resize", function(){
+  const canvas = document.getElementById("confetti-canvas");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+/* ============== UTIL ============== */
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+
+/* ============== INICIO ============== */
+initRegistro();
+asegurarSesion();
+
+})();
+</script>
+</body>
+</html>
